@@ -3,31 +3,36 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 
-# ── Google Sheet share-link (anyone-with-link → viewer) ──────────────
+# public-share link (no /edit, no #gid)
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
 
-# numeric gid values (replace XXXXX with your real number for Kshetra tab)
-RESP_GID = 341334397
-KSH_GID  = 554598115
+RESP_GID =341334397
+KSH_GID  =554598115
+conn: GSheetsConnection = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=10, show_spinner="Loading Google Sheets …")
 def load_data():
-    resp_df = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=RESP_GID)
-    ksh_df  = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=KSH_GID)
-    return resp_df, ksh_df
+    try:
+        resp = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=RESP_GID)
+        ksh  = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=KSH_GID)
+        return resp, ksh
+    except Exception as e:
+        # bubble up so caller can handle
+        raise RuntimeError(f"CSV fetch failed → {e}") from e
 
+try:
+    resp_df, ksh_df = load_data()
+except Exception as err:
+    st.error(str(err))
+    st.stop()
 
-# ── Merge & clean ────────────────────────────────────────────────────
+# ── Merge & clean ─────────────────────────────────────────────
 df = resp_df.merge(
         ksh_df,
         left_on="Kshetra",
         right_on="Kshetra Group",
         how="left"
-     )
-
-COL_KSHTRA   = "Kshetra"
-COL_MAIN     = "Main Group"
-COL_REG_NAME = "Karyakarta Name_2"
+)
 
 # ── Aggregations ─────────────────────────────────────────────────────
 state_totals = (
