@@ -2,9 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# ─────────────────────────────────────────────────────────────
-# 0. CSV export links (public “Anyone with link”)
-# ─────────────────────────────────────────────────────────────
+# ─── 1. CSV links (public) ───────────────────────────────────────────────
 RESP_URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
@@ -16,10 +14,8 @@ KSH_URL = (
     "/export?format=csv&gid=554598115"
 )
 
-# ─────────────────────────────────────────────────────────────
-# 1. Load & merge data (cached 10 s)
-# ─────────────────────────────────────────────────────────────
-@st.cache_data(ttl=10, show_spinner="डेटा लोड हो रहा है…")
+# ─── 2. Load & merge (cache 10s) ─────────────────────────────────────────
+@st.cache_data(ttl=10, show_spinner="Loading data…")
 def load_data():
     resp = pd.read_csv(RESP_URL).rename(columns=str.strip)
     ksh  = pd.read_csv(KSH_URL).rename(columns=str.strip)
@@ -33,134 +29,109 @@ def load_data():
 try:
     df = load_data()
 except Exception as e:
-    st.error(f"❌ डेटा लोड में त्रुटि: {e}")
+    st.error(f"❌ Failed to load data: {e}")
     st.stop()
 
-# ─────────────────────────────────────────────────────────────
-# 2. Compute metrics
-# ─────────────────────────────────────────────────────────────
-COL_MAIN     = "Main Group"
-COL_KSHTRA   = "Kshetra"
-COL_KARYA    = "Karyakarta Name_2"
+# ─── 3. Rename & compute aggregates ────────────────────────────────────────
+COL_STATE    = "Main Group"
+COL_REGION   = "Kshetra"
+COL_WORKER   = "Karyakarta Name_2"
+COL_WORKER_ID = "Karyakarta ID"
+
+# Total donors
+total_donors = len(df)
 
 # State totals
 state_totals = (
-    df.groupby(COL_MAIN)
-      .size()
-      .reset_index(name="कुल रजिस्ट्रेशन")
-      .sort_values("कुल रजिस्ट्रेशन", ascending=False)
+    df.groupby(COL_STATE).size()
+      .reset_index(name="Registrations")
+      .sort_values("Registrations", ascending=False)
 )
 
-# Kshetra totals
-kshetra_totals = (
-    df.groupby([COL_MAIN, COL_KSHTRA])
-      .size()
-      .reset_index(name="रजिस्ट्रेशन")
+# Top 5 karyakartas overall (ID + Name)
+top5 = (
+    df.groupby([COL_WORKER_ID, COL_WORKER])["Kshetra"]
+      .count()
+      .reset_index(name="Registrations")
+      .sort_values("Registrations", ascending=False)
+      .head(5)
 )
 
-# Karyakarta totals
-karya_totals = (
-    df.groupby([COL_MAIN, COL_KSHTRA, COL_KARYA])
-      .size()
-      .reset_index(name="रजिस्ट्रेशन")
+# Per-state top region + worker
+region_totals = (
+    df.groupby([COL_STATE, COL_REGION]).size()
+      .reset_index(name="Count")
+)
+worker_totals = (
+    df.groupby([COL_STATE, COL_REGION, COL_WORKER_ID, COL_WORKER]).size()
+      .reset_index(name="Count")
 )
 
-# Build summary per-state
-summary_rows = []
-for _, st_row in state_totals.iterrows():
-    state = st_row[COL_MAIN]
-    total = int(st_row["कुल रजिस्ट्रेशन"])
-    # top Kshetra
-    top_ksh = (
-        kshetra_totals[kshetra_totals[COL_MAIN] == state]
-        .nlargest(1, "रजिस्ट्रेशन").iloc[0]
-    )
-    # top Karyakarta in that kshetra
-    top_kr = (
-        karya_totals[
-            (karya_totals[COL_MAIN] == state) &
-            (karya_totals[COL_KSHTRA] == top_ksh[COL_KSHTRA])
-        ]
-        .nlargest(1, "रजिस्ट्रेशन").iloc[0]
-    )
-    summary_rows.append({
-        "राज्य": state,
-        "कुल रजिस्ट्रेशन": total,
-        "शीर्ष क्षेत्र": top_ksh[COL_KSHTRA],
-        "क्षेत्र रेज़िस्ट्री": int(top_ksh["रजिस्ट्रेशन"]),
-        "शीर्ष कार्यकर्ता": top_kr[COL_KARYA],
-        "कार्यकर्ता रेज़िस्ट्री": int(top_kr["रजिस्ट्रेशन"]),
+summary = []
+for _, row in state_totals.iterrows():
+    st_name = row[COL_STATE]
+    # top region
+    top_reg = region_totals[region_totals[COL_STATE] == st_name] \
+                .nlargest(1, "Count").iloc[0]
+    # top worker in that region
+    top_wrk = worker_totals[
+                (worker_totals[COL_STATE] == st_name) &
+                (worker_totals[COL_REGION] == top_reg[COL_REGION])
+              ].nlargest(1, "Count").iloc[0]
+    summary.append({
+        "State": st_name,
+        "Registrations": int(row["Registrations"]),
+        "Top Region": top_reg[COL_REGION],
+        "Region Count": int(top_reg["Count"]),
+        "Top Worker": f"{top_wrk[COL_WORKER_ID]} – {top_wrk[COL_WORKER]}",
+        "Worker Count": int(top_wrk["Count"]),
     })
-summary_df = pd.DataFrame(summary_rows)
+summary_df = pd.DataFrame(summary)
 
-# ─────────────────────────────────────────────────────────────
-# 3. Streamlit UI
-# ─────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="🩸 MBDD लाइव प्रतियोगिता",
-    page_icon="🩸",
-    layout="wide"
-)
+# ─── 4. Build the Streamlit UI ────────────────────────────────────────────
+st.set_page_config(page_title="MBDD Leaderboard", layout="wide", page_icon="🩸")
 
 # Header
-st.markdown(
-    "<h1 style='text-align:center;'>🩸 MBDD – मैगा रक्त दान ड्राइव प्रतियोगिता</h1>",
-    unsafe_allow_html=True
-)
-col_time, col_refresh = st.columns([3,1])
-with col_time:
-    st.markdown(f"**अद्यतन समय:** {datetime.now():%H:%M:%S}")
-with col_refresh:
-    if st.button("🔄 रिफ्रेश"):
+st.markdown("<h1 style='text-align:center;'>🩸 MBDD Live Leaderboard</h1>", unsafe_allow_html=True)
+col1, col2 = st.columns([3,1])
+with col1:
+    st.metric("Total Donors Registered", total_donors)
+with col2:
+    if st.button("🔄 Refresh"):
         st.cache_data.clear()
         df = load_data()
-        state_totals = (
-            df.groupby(COL_MAIN).size()
-              .reset_index(name="कुल रजिस्ट्रेशन")
-              .sort_values("कुल रजिस्ट्रेशन", ascending=False)
-        )
-        summary_df = pd.DataFrame(summary_rows)  # rebuild if needed
 
 st.markdown("---")
 
-# Top 3 States as Metrics
-st.markdown("## 🏅 शीर्ष 3 राज्य")
-top3 = state_totals.head(3).reset_index(drop=True)
+# Top 3 States
+st.subheader("🏆 Top 3 States")
+top3 = state_totals.head(3)
 cols = st.columns(3)
-medals = ["🥇", "🥈", "🥉"]
-for i, row in top3.iterrows():
-    cols[i].metric(
-        label=f"{medals[i]} {row[COL_MAIN]}",
-        value=int(row["कुल रजिस्ट्रेशन"])
-    )
+for i, (_, r) in enumerate(top3.iterrows()):
+    medal = ["🥇","🥈","🥉"][i]
+    cols[i].metric(f"{medal} {r[COL_STATE]}", int(r["Registrations"]))
 
 st.markdown("---")
 
 # State Bar Chart
-st.markdown("## 📊 राज्यवार रजिस्ट्रेशन चार्ट")
+st.subheader("📊 Registrations by State")
+st.bar_chart(state_totals.set_index(COL_STATE)["Registrations"], use_container_width=True)
+
+st.markdown("---")
+
+# Top 5 Karyakartas
+st.subheader("👤 Top 5 Karyakartas")
 st.bar_chart(
-    state_totals.set_index(COL_MAIN)["कुल रजिस्ट्रेशन"],
+    top5.assign(Label=top5[COL_WORKER_ID] + ": " + top5[COL_WORKER])
+        .set_index("Label")["Registrations"], 
     use_container_width=True
 )
 
 st.markdown("---")
 
 # Detailed Summary Table
-st.markdown("## 🗺️ राज्य → क्षेत्र → शीर्ष कार्यकर्ता लीडरबोर्ड")
-st.dataframe(summary_df, hide_index=True, use_container_width=True)
+st.subheader("🗺️ State → Region → Top Worker")
+st.dataframe(summary_df, use_container_width=True)
 
-st.markdown("---")
-
-# Top 5 Karyakartas Overall
-st.markdown("## 👤 शीर्ष 5 कार्यकर्ता (सभी राज्यों में)")
-top5_kr = (
-    karya_totals.groupby(COL_KARYA)["रजिस्ट्रेशन"]
-                .sum()
-                .reset_index()
-                .nlargest(5, "रजिस्ट्रेशन")
-)
-st.table(top5_kr.rename(columns={COL_KARYA:"कार्यकर्ता", "रजिस्ट्रेशन":"कुल रेज़िस्ट्री"}))
-
-st.markdown("---")
-st.markdown("**🔔 स्वस्थ प्रतिस्पर्धा बनाए रखें!**")
-
+st.markdown("***")
+st.markdown("_May the best state win!_ 🎉")
