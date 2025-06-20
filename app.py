@@ -6,19 +6,16 @@ from datetime import datetime
 # ── Google Sheet share-link (anyone-with-link → viewer) ──────────────
 SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
 
-# ── Connect once ─────────────────────────────────────────────────────
-conn: GSheetsConnection = st.connection("gsheets", type=GSheetsConnection)
+# numeric gid values (replace XXXXX with your real number for Kshetra tab)
+RESP_GID = 341334397
+KSH_GID  = 554598115
 
-# ── Load data (cached 10 s) ──────────────────────────────────────────
 @st.cache_data(ttl=10)
 def load_data():
-    resp_df = conn.read(spreadsheet=SPREADSHEET_URL,
-                        worksheet="Form Responses 1")
-    ksh_df  = conn.read(spreadsheet=SPREADSHEET_URL,
-                        worksheet="Kshetra")
+    resp_df = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=RESP_GID)
+    ksh_df  = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=KSH_GID)
     return resp_df, ksh_df
 
-resp_df, ksh_df = load_data()
 
 # ── Merge & clean ────────────────────────────────────────────────────
 df = resp_df.merge(
