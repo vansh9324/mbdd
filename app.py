@@ -1,46 +1,41 @@
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 
-# ── PUBLIC SHEET URL (no /edit, no #gid) ────────────────────────────
-SPREADSHEET_URL = (
-    "https://docs.google.com/spreadsheets/d/"
-    "1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
+# ── DIRECT CSV LINKS (verified in your browser) ─────────────────────
+RESP_URL = (
+    "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
+    "/export?format=csv&gid=341334397"    # Form Responses 1
+)
+KSH_URL = (
+    "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
+    "/export?format=csv&gid=554598115"    # Kshetra
 )
 
-# numeric gid values you just confirmed
-RESP_GID = 341334397   # Form Responses 1
-KSH_GID  = 554598115   # Kshetra
-
-conn: GSheetsConnection = st.connection("gsheets", type=GSheetsConnection)
-
-# ── Load both tabs every 10 s (CSV fetch) ───────────────────────────
+# ── LOAD & MERGE (cached 10 s) ──────────────────────────────────────
 @st.cache_data(ttl=10, show_spinner="Fetching Google Sheets …")
 def load_data():
-    resp_df = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=RESP_GID)
-    ksh_df  = conn.read(spreadsheet=SPREADSHEET_URL, worksheet=KSH_GID)
-    return resp_df, ksh_df
+    resp = pd.read_csv(RESP_URL)
+    ksh  = pd.read_csv(KSH_URL)
+    return resp.merge(
+        ksh,
+        left_on="Kshetra",
+        right_on="Kshetra Group",
+        how="left"
+    )
 
 try:
-    resp_df, ksh_df = load_data()
+    df = load_data()
 except Exception as e:
-    st.error(f"❌ Could not fetch Google Sheet CSV → {e}")
+    st.error(f"❌ CSV fetch failed → {e}")
     st.stop()
 
-# ── Merge & clean ───────────────────────────────────────────────────
-df = resp_df.merge(
-    ksh_df,
-    left_on="Kshetra",
-    right_on="Kshetra Group",
-    how="left"
-)
-
+# ── COLUMN ALIASES ─────────────────────────────────────────────────
 COL_KSHTRA   = "Kshetra"
 COL_MAIN     = "Main Group"
 COL_REG_NAME = "Karyakarta Name_2"
 
-# ── Aggregations ────────────────────────────────────────────────────
+# ── AGGREGATIONS ───────────────────────────────────────────────────
 state_totals = (
     df.groupby(COL_MAIN).size()
       .reset_index(name="कुल रजिस्ट्रेशन")
@@ -59,22 +54,19 @@ karya_totals = (
 
 rows = []
 for _, r in state_totals.iterrows():
-    state = r[COL_MAIN]
-    total = int(r["कुल रजिस्ट्रेशन"])
+    state   = r[COL_MAIN]
+    total   = int(r["कुल रजिस्ट्रेशन"])
 
     best_sub = (
         kshetra_totals[kshetra_totals[COL_MAIN] == state]
-        .nlargest(1, "रजिस्ट्रेशन")
-        .iloc[0]
+        .nlargest(1, "रजिस्ट्रेशन").iloc[0]
     )
-
     best_reg = (
         karya_totals[
             (karya_totals[COL_MAIN] == state) &
             (karya_totals[COL_KSHTRA] == best_sub[COL_KSHTRA])
         ]
-        .nlargest(1, "रजिस्ट्रेशन")
-        .iloc[0]
+        .nlargest(1, "रजिस्ट्रेशन").iloc[0]
     )
 
     rows.append({
@@ -88,7 +80,7 @@ for _, r in state_totals.iterrows():
 
 board = pd.DataFrame(rows).sort_values("कुल रजिस्ट्रेशन", ascending=False)
 
-# ── Streamlit UI ────────────────────────────────────────────────────
+# ── STREAMLIT UI ───────────────────────────────────────────────────
 st.set_page_config(page_title="🩸 MBDD Live Leaderboard",
                    page_icon="🩸", layout="wide")
 
