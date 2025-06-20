@@ -4,7 +4,7 @@ from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 
 # ── Google Sheet share-link (anyone-with-link → viewer) ──────────────
-SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ/edit#gid=0"
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
 
 # ── Connect once ─────────────────────────────────────────────────────
 conn: GSheetsConnection = st.connection("gsheets", type=GSheetsConnection)
