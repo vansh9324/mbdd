@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 1. CSV URLs (public)
+# CSV URLs for public Google Sheets
 RESP_URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ"
@@ -14,11 +14,15 @@ KSH_URL = (
     "/export?format=csv&gid=554598115"
 )
 
-# 2. Load & merge
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=15)
 def load_data():
     resp = pd.read_csv(RESP_URL).rename(columns=str.strip)
     ksh  = pd.read_csv(KSH_URL).rename(columns=str.strip)
+
+    # Force string type to avoid dtype mismatch
+    resp["Kshetra"] = resp["Kshetra"].astype(str).str.strip()
+    ksh["Kshetra Group"] = ksh["Kshetra Group"].astype(str).str.strip()
+
     return resp.merge(ksh, left_on="Kshetra", right_on="Kshetra Group", how="left")
 
 try:
@@ -26,7 +30,6 @@ try:
 except Exception as e:
     st.error(f"Failed to load data: {e}")
     st.stop()
-
 # 3. Aggregations
 STATE      = "Main Group"
 REGION     = "Kshetra"
