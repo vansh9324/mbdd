@@ -67,34 +67,13 @@ state_tot = (
       .sort_values("Registrations", ascending=False)
 )
 # ───────── 3.  Page scaffold & theme  ───────────────────────────────
+st.set_page_config("MBDD Leaderboard", "🩸", layout="wide")
+
 st.markdown("""
 <style>
-/* Global colours */
-:root {
-  --accent:  #ff4d4d;   /* 🔴 bright red */
-  --bg:      #14171f;   /* dark background */
-  --text:    #f1f5f9;   /* light gray text */
-}
-
-/* App canvas */
-.stApp { background:var(--bg); color:var(--text); }
-
-/* Headings / section titles */
-h1, h2, h3 { color:var(--accent); }
-
-/* Metric numbers (Streamlit built-in) */
-div[data-testid="stMetric"] > div { color:var(--accent); }
-
-/* Altair bars */
-.vega-embed .mark-rect, .vega-embed .mark-bar { fill:var(--accent); }
-
-/* Native bar_chart bars */
-.element-container rect { fill:var(--accent); }
-
-/* Data-frame header row */
-.stDataFrame thead th { background:var(--accent); color:#000; }
-</style>
-""", unsafe_allow_html=True)
+ .stApp {background:#1e1e2e;color:#fff;}
+ .stDataFrame table {color:#000 !important;}
+</style>""", unsafe_allow_html=True)
 
 st.markdown(
     "<h1 style='text-align:center;color:#ffa600;'>🩸 MBDD – Mega Blood Donation Drive</h1>",
@@ -109,6 +88,7 @@ st.markdown(f"""
 </div>""", unsafe_allow_html=True)
 
 st.markdown("---")
+
 
 # ───────── 4.  Top-3 States cards  ─────────────────────────────────
 st.markdown("<h2 style='color:#ffa600;'>🏆 Top 3 States</h2>", unsafe_allow_html=True)
