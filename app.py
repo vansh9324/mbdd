@@ -61,6 +61,19 @@ top10_workers = (df.groupby([WORKER, WID]).size()
                    .reset_index(name="Registrations")
                    .sort_values("Registrations", ascending=False)
                    .head(10))
+# ❶ top-Kshetra for each state
+top_ksh_state = (
+    df.groupby([STATE, REGION]).size()
+      .reset_index(name="Count")
+      .sort_values([STATE, "Count"], ascending=[True, False])
+      .drop_duplicates(STATE)
+      .rename(columns={STATE: "State", REGION: "Top Kshetra"})   # ← added STATE rename
+)
+
+state_tot_chart = (
+    state_tot.rename(columns={STATE: "State"})                   # match the new name
+              .merge(top_ksh_state, on="State", how="left")
+)
 
 # ───────── 3.  Page scaffold & theme  ───────────────────────────────
 st.set_page_config("MBDD Leaderboard", "🩸", layout="wide")
