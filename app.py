@@ -7,11 +7,12 @@ import streamlit.components.v1 as components
 # Replace these with actual df values loaded from st.connection or CSV
 @st.cache_data(ttl=60)
 def load_data():
-    resp_df = pd.read_csv("https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ/edit?resourcekey=&gid=341334397")
-    ksh_df = pd.read_csv("https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ/edit?resourcekey=&gid=554598115")
-    # Fix mismatched types if any
+    resp_df = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQR-MFYvhSoyuozk36y1XY2IkcdbgjOgRspcf1XRjUtrA0zU2M_9gve0yQs9_4mQl_uu_h-wl0WWFNE/pub?gid=341334397&single=true&output=csv")
+    ksh_df = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQR-MFYvhSoyuozk36y1XY2IkcdbgjOgRspcf1XRjUtrA0zU2M_9gve0yQs9_4mQl_uu_h-wl0WWFNE/pub?gid=554598115&single=true&output=csv")
+    
     resp_df["Kshetra"] = resp_df["Kshetra"].astype(str)
     ksh_df["Kshetra Group"] = ksh_df["Kshetra Group"].astype(str)
+
     df = resp_df.merge(ksh_df, left_on="Kshetra", right_on="Kshetra Group", how="left")
     return df
 
