@@ -61,15 +61,17 @@ top10_workers = (df.groupby([WORKER, WID]).size()
                    .reset_index(name="Registrations")
                    .sort_values("Registrations", ascending=False)
                    .head(10))
-# ❶ top-Kshetra for each state
 top_ksh_state = (
     df.groupby([STATE, REGION]).size()
       .reset_index(name="Count")
-      .sort_values("Count", ascending=False)          # <-- sort only on Count
-      .drop_duplicates(STATE)                         # keep best ks for each state
-      .rename(columns={STATE: "State", REGION: "Top Kshetra"})
+      .sort_values("Count", ascending=False)
+      .drop_duplicates(subset=[STATE])  # <-- use variable STATE instead of renamed column
 )
 
+# Rename columns after processing
+top_ksh_state = top_ksh_state.rename(columns={STATE: "State", REGION: "Top Kshetra"})
+
+# Merge with state totals
 state_tot_chart = (
     state_tot.rename(columns={STATE: "State"})
              .merge(top_ksh_state, on="State", how="left")
