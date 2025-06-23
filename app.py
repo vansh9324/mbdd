@@ -128,42 +128,53 @@ for card, (state, regs) in zip(cards, state_tot.head(3).itertuples(index=False, 
 st.markdown("---")
 
 # ───────── 5.  Side-by-side charts  ────────────────────────────────
-# ───────── 5.  Side-by-side charts  ────────────────────────────────
 left, right = st.columns(2)
 
-# ❶ compute top-kshetra per state
+# build “top-kshetra per state” table
 top_ksh_state = (
     df.groupby([STATE, REGION]).size()
       .reset_index(name="Count")
-      .sort_values(["State", "Count"], ascending=[True, False])
-      .drop_duplicates(STATE)
-      .rename(columns={REGION: "Top Kshetra"})
-)[[STATE, "Top Kshetra"]]
+      .sort_values(["Main Group", "Count"], ascending=[True, False])
+      .drop_duplicates(subset=[STATE])        # keep best kshetra for each state
+      .rename(columns={STATE: "State",
+                       REGION: "Top Kshetra"})
+)
 
-state_tot_chart = state_tot.merge(top_ksh_state, on=STATE, how="left")
+state_tot_chart = (
+    state_tot.rename(columns={STATE: "State"})
+             .merge(top_ksh_state, on="State", how="left")
+)
 
 with left:
-    st.markdown("<h3 style='color:#ffa600;'>📊 Registrations by State</h3>",
-                unsafe_allow_html=True)
-    st.altair_chart(
+    st.markdown(
+        "<h3 style='color:#ffa600;'>📊 Registrations by State</h3>",
+        unsafe_allow_html=True
+    )
+
+    state_chart = (
         alt.Chart(state_tot_chart)
            .mark_bar(color="#ffa600")
            .encode(
-               x=alt.X("Registrations:Q", title="Regs"),
-               y=alt.Y(f"{STATE}:N", sort="-x", title="State"),
+               x=alt.X("Registrations:Q",
+                       title="Regs"),
+               y=alt.Y("State:N",
+                       sort="-x",
+                       title="State"),
                tooltip=[
-                   alt.Tooltip(f"{STATE}:N",        title="State"),
-                   alt.Tooltip("Registrations:Q",  title="Registrations"),
-                   alt.Tooltip("Top Kshetra:N",    title="Top Kshetra")
+                   alt.Tooltip("State:N",           title="State"),
+                   alt.Tooltip("Registrations:Q",   title="Registrations"),
+                   alt.Tooltip("Top Kshetra:N",     title="Top Kshetra")
                ]
            )
-           .properties(height=300),
-        use_container_width=True
+           .properties(height=300)
     )
+    st.altair_chart(state_chart, use_container_width=True)
 
 with right:
-    st.markdown("<h3 style='color:#ffa600;'>🗺️ Registrations by Kshetra</h3>",
-                unsafe_allow_html=True)
+    st.markdown(
+        "<h3 style='color:#ffa600;'>🗺️ Registrations by Kshetra</h3>",
+        unsafe_allow_html=True
+    )
     ks_chart = (
         alt.Chart(ks_tot)
            .mark_bar(color="#ffa600")
@@ -181,6 +192,7 @@ with right:
     st.altair_chart(ks_chart, use_container_width=True)
 
 st.markdown("---")
+
 
 # ───────── 6.  Marquee Top-10 workers  ─────────────────────────────
 ticker_html = " | ".join(
