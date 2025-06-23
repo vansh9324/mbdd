@@ -119,7 +119,7 @@ with right:
                 alt.Tooltip("Registrations:Q", title="Registrations"),
                 alt.Tooltip("Top Karyakarta:N", title="Top Karyakarta")
             ])
-        .properties(height=500))
+        .properties(height=350))
     st.altair_chart(ks_chart, use_container_width=True)
 
 st.markdown("---")
