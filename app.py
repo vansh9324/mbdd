@@ -128,7 +128,7 @@ st.markdown("---")
 ticker_html = " | ".join(
     f"<span style='color:#ffa600;font-weight:bold;'>{r[WORKER]}</span>"
     f"<span style='color:#aaa;'> (ID:{r[WID]})</span> "
-    f"- {r['Registrations']} regs"
+    f"- {r['Registrations']}"
     for _, r in top10_workers.iterrows()
 )
 components.html(f"""
@@ -138,7 +138,7 @@ components.html(f"""
   </marquee>
 </div>""", height=55)
 
-st.markdown("<p style='text-align:center;opacity:0.7;'>_May the best state win!_ 🎉</p>",
+st.markdown("<p style='text-align:center;opacity:0.7;'>धन्यवाद, ॐ अर्हम् 🎉</p>",
             unsafe_allow_html=True)
 
 # auto-refresh
