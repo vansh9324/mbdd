@@ -61,36 +61,11 @@ top10_workers = (df.groupby([WORKER, WID]).size()
                    .reset_index(name="Registrations")
                    .sort_values("Registrations", ascending=False)
                    .head(10))
-# Get the top Kshetra (region) per state
-top_ksh_per_state = (
-    df.groupby(["Main Group", "Kshetra"])
-      .size()
+state_tot = (
+    df.groupby(STATE).size()
       .reset_index(name="Registrations")
+      .sort_values("Registrations", ascending=False)
 )
-
-# Sort by State and descending Registrations
-top_ksh_per_state = top_ksh_per_state.sort_values(["Main Group", "Registrations"], ascending=[True, False])
-
-# Drop all but top 1 Kshetra per state
-top_ksh_per_state = top_ksh_per_state.drop_duplicates(subset=["Main Group"])
-
-# Rename for presentation
-top_ksh_per_state = top_ksh_per_state.rename(columns={
-    "Main Group": "State",
-    "Kshetra": "Top Kshetra"
-})
-
-# Merge with total registrations per state
-state_totals_merged = (
-    state_totals.rename(columns={"Main Group": "State"})
-    .merge(top_ksh_per_state, on="State", how="left")
-)
-
-# Display as a table
-st.markdown("<h2 style='color:#ffa600;'>🥇 Top Kshetra in Each State</h2>", unsafe_allow_html=True)
-st.dataframe(state_totals_merged, use_container_width=True)
-
-
 # ───────── 3.  Page scaffold & theme  ───────────────────────────────
 st.set_page_config("MBDD Leaderboard", "🩸", layout="wide")
 
