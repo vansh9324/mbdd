@@ -61,21 +61,35 @@ top10_workers = (df.groupby([WORKER, WID]).size()
                    .reset_index(name="Registrations")
                    .sort_values("Registrations", ascending=False)
                    .head(10))
-top_ksh_state = (
-    df.groupby([STATE, REGION]).size()
-      .reset_index(name="Count")
-      .sort_values("Count", ascending=False)
-      .drop_duplicates(subset=[STATE])  # <-- use variable STATE instead of renamed column
+# Get the top Kshetra (region) per state
+top_ksh_per_state = (
+    df.groupby(["Main Group", "Kshetra"])
+      .size()
+      .reset_index(name="Registrations")
 )
 
-# Rename columns after processing
-top_ksh_state = top_ksh_state.rename(columns={STATE: "State", REGION: "Top Kshetra"})
+# Sort by State and descending Registrations
+top_ksh_per_state = top_ksh_per_state.sort_values(["Main Group", "Registrations"], ascending=[True, False])
 
-# Merge with state totals
-state_tot_chart = (
-    state_tot.rename(columns={STATE: "State"})
-             .merge(top_ksh_state, on="State", how="left")
+# Drop all but top 1 Kshetra per state
+top_ksh_per_state = top_ksh_per_state.drop_duplicates(subset=["Main Group"])
+
+# Rename for presentation
+top_ksh_per_state = top_ksh_per_state.rename(columns={
+    "Main Group": "State",
+    "Kshetra": "Top Kshetra"
+})
+
+# Merge with total registrations per state
+state_totals_merged = (
+    state_totals.rename(columns={"Main Group": "State"})
+    .merge(top_ksh_per_state, on="State", how="left")
 )
+
+# Display as a table
+st.markdown("<h2 style='color:#ffa600;'>🥇 Top Kshetra in Each State</h2>", unsafe_allow_html=True)
+st.dataframe(state_totals_merged, use_container_width=True)
+
 
 # ───────── 3.  Page scaffold & theme  ───────────────────────────────
 st.set_page_config("MBDD Leaderboard", "🩸", layout="wide")
