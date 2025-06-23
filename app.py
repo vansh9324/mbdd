@@ -99,27 +99,56 @@ for card, (state, regs) in zip(cards, state_tot.head(3).itertuples(index=False, 
 st.markdown("---")
 
 # ───────── 5.  Side-by-side charts  ────────────────────────────────
+# ───────── 5.  Side-by-side charts  ────────────────────────────────
 left, right = st.columns(2)
+
+# ❶ compute top-kshetra per state
+top_ksh_state = (
+    df.groupby([STATE, REGION]).size()
+      .reset_index(name="Count")
+      .sort_values(["State", "Count"], ascending=[True, False])
+      .drop_duplicates(STATE)
+      .rename(columns={REGION: "Top Kshetra"})
+)[[STATE, "Top Kshetra"]]
+
+state_tot_chart = state_tot.merge(top_ksh_state, on=STATE, how="left")
 
 with left:
     st.markdown("<h3 style='color:#ffa600;'>📊 Registrations by State</h3>",
                 unsafe_allow_html=True)
-    st.bar_chart(state_tot.set_index(STATE)["Registrations"], use_container_width=True)
+    st.altair_chart(
+        alt.Chart(state_tot_chart)
+           .mark_bar(color="#ffa600")
+           .encode(
+               x=alt.X("Registrations:Q", title="Regs"),
+               y=alt.Y(f"{STATE}:N", sort="-x", title="State"),
+               tooltip=[
+                   alt.Tooltip(f"{STATE}:N",        title="State"),
+                   alt.Tooltip("Registrations:Q",  title="Registrations"),
+                   alt.Tooltip("Top Kshetra:N",    title="Top Kshetra")
+               ]
+           )
+           .properties(height=300),
+        use_container_width=True
+    )
 
 with right:
     st.markdown("<h3 style='color:#ffa600;'>🗺️ Registrations by Kshetra</h3>",
                 unsafe_allow_html=True)
-    ks_chart = (alt.Chart(ks_tot)
-        .mark_bar(color="#ffa600")
-        .encode(
-            x=alt.X("Registrations:Q", title="Regs"),
-            y=alt.Y("Kshetra:N", sort="-x", title="Kshetra"),
-            tooltip=[
-                alt.Tooltip("Kshetra:N", title="Kshetra"),
-                alt.Tooltip("Registrations:Q", title="Registrations"),
-                alt.Tooltip("Top Karyakarta:N", title="Top Karyakarta")
-            ])
-        .properties(height=350))
+    ks_chart = (
+        alt.Chart(ks_tot)
+           .mark_bar(color="#ffa600")
+           .encode(
+               x=alt.X("Registrations:Q", title="Regs"),
+               y=alt.Y("Kshetra:N", sort="-x", title="Kshetra"),
+               tooltip=[
+                   alt.Tooltip("Kshetra:N",        title="Kshetra"),
+                   alt.Tooltip("Registrations:Q",  title="Registrations"),
+                   alt.Tooltip("Top Karyakarta:N", title="Top Karyakarta")
+               ]
+           )
+           .properties(height=300)
+    )
     st.altair_chart(ks_chart, use_container_width=True)
 
 st.markdown("---")
