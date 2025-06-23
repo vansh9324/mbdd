@@ -7,8 +7,8 @@ import streamlit.components.v1 as components
 # Replace these with actual df values loaded from st.connection or CSV
 @st.cache_data(ttl=60)
 def load_data():
-    resp_df = pd.read_csv("YOUR_RESP_SHEET_CSV_URL")
-    ksh_df = pd.read_csv("YOUR_KSHETRA_SHEET_CSV_URL")
+    resp_df = pd.read_csv("https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ/edit?resourcekey=&gid=341334397")
+    ksh_df = pd.read_csv("https://docs.google.com/spreadsheets/d/1uFynRj2NtaVZveKygfEuliuLYwsKe2zCjycjS5F-YPQ/edit?resourcekey=&gid=554598115")
     # Fix mismatched types if any
     resp_df["Kshetra"] = resp_df["Kshetra"].astype(str)
     ksh_df["Kshetra Group"] = ksh_df["Kshetra Group"].astype(str)
