@@ -68,10 +68,24 @@ kshetra_sorted = kshetra_tbl.sort_values("Registrations", ascending=False).reset
 st.dataframe(kshetra_sorted[["Main Group", "Kshetra", "Registrations", "Top Karyakarta"]], use_container_width=True)
 
 # ── Dynamic Top 10 Karyakarta Slide ──
-st.markdown("### 🔟 Top 10 Karyakartas")
+# Assume this DataFrame exists:
+# board_top10 = DataFrame with columns: ["Karyakarta", "रजिस्ट्रेशन", "Kshetra"]
 
-html_slider = "<div style='overflow:hidden;'><marquee behavior='scroll' direction='left' scrollamount='6' style='font-size: 1.2em; color: white; background: #223344; padding: 10px;'>"
-for _, row in top_karyakartas.iterrows():
-    html_slider += f"<span style='margin-right: 60px;'>👤 <b>{row['Karyakarta Name_2']}</b> (ID: {row['Karyakarta ID']}) — {row['Registrations']} regs</span>"
-html_slider += "</marquee></div>"
-components.html(html_slider, height=50)
+top_karyakartas = board_top10.to_dict("records")
+
+# Heading for section
+st.markdown("## 🧑‍🔬 Top 10 Karyakartas")
+
+# Display 5 cards per row
+for i in range(0, len(top_karyakartas), 5):
+    row_data = top_karyakartas[i:i+5]
+    cols = st.columns(len(row_data))  # Create only as many columns as needed
+
+    for col, karyakart in zip(cols, row_data):
+        with col:
+            st.metric(
+                label=karyakart["Karyakarta"],
+                value=f'{karyakart["रजिस्ट्रेशन"]} registrations',
+                delta=f'{karyakart["Kshetra"]}',
+                help="Most active karyakarta in that Kshetra"
+            )
