@@ -46,7 +46,8 @@ total_donors = len(df)
 state_totals = (df.groupby(STATE).size()
                   .reset_index(name="Registrations")
                   .sort_values("Registrations", ascending=False))
-
+# drop rows where Kshetra is NaN or empty after stripping
+df = df[ df[REGION].str.strip().str.lower().ne('nan') & df[REGION].str.strip().ne('') ]
 region_totals = (df.groupby(REGION).size()
                    .reset_index(name="Registrations")
                    .sort_values("Registrations", ascending=False))
@@ -131,7 +132,7 @@ ks_chart = (alt.Chart(region_totals)
             alt.Tooltip("Top Karyakarta:N",    title="Top Karyakarta")
         ]
     )
-    .properties(height=500)
+    .properties(height=200)
 )
 st.altair_chart(ks_chart, use_container_width=True)
 
