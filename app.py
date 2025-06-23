@@ -92,7 +92,7 @@ st.markdown("---")
 st.markdown("<h2 style='color:#ffa600;'>🏆 Top 3 States</h2>", unsafe_allow_html=True)
 cols = st.columns(3)
 medals = ["🥇","🥈","🥉"]
-for i, row in enumerate(state_totals.head(3).itertuples(index=False)):
+for i, (state_name, count) in enumerate(state_totals.head(3).itertuples(index=False, name=None)):
     cols[i].markdown(f"""
       <div style="
         background:#2f4b7c;
@@ -101,9 +101,9 @@ for i, row in enumerate(state_totals.head(3).itertuples(index=False)):
         text-align:center;
         color:#fff;
       ">
-        <div style="font-size:20px;font-weight:bold;">{row[STATE]}</div>
+        <div style="font-size:20px;font-weight:bold;">{state_name}</div>
         <div style="font-size:28px;color:#ffa600;font-weight:bold;">
-          {row['Registrations']:,}
+          {count:,}
         </div>
         <div style="font-size:12px;opacity:0.8;">Total Registrations</div>
       </div>
